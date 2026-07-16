@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Fondo azul con bordes redondeados -->
+  <rect x="5" y="5" width="190" height="190" rx="14" fill="#0D3B6E"/>
+
+  <!-- Letra M blanca -->
+  <text x="12" y="165" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="155" fill="white">M</text>
+
+  <!-- Letra D amarilla -->
+  <text x="105" y="165" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="155" fill="#E8B624">D</text>
+
+  <!-- Cruz diagonal - palo largo -->
+  <line x1="100" y1="5" x2="135" y2="195" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <!-- Cruz diagonal - palo corto (travesano) -->
+  <line x1="60" y1="55" x2="170" y2="20" stroke="white" stroke-width="11" stroke-linecap="round"/>
+</svg>
