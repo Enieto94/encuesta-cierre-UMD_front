@@ -8,18 +8,49 @@ import {
   MatrixQuestion,
 } from './components/FormField';
 import ProgressBar from './components/ProgressBar';
+import LoginRegister from './components/LoginRegister';
+import AdminView from './components/AdminView';
+import StudentView from './components/StudentView';
 import './App.css';
 
 const logo = process.env.PUBLIC_URL + '/logo.png';
 
 function App() {
-  const [currentStep, setCurrentStep] = useState(-1); // -1 = consent screen
+  // Autenticación
+  const [token, setToken] = useState(null);
+  const [user, setUser] = useState(null);
+
+  // Vista para usuarios normales: form | student
+  const [userView, setUserView] = useState('form');
+
+  // Estado del formulario
+  const [currentStep, setCurrentStep] = useState(-1);
   const [consent, setConsent] = useState(false);
   const [formData, setFormData] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+
+  const handleAuth = (newToken, newUser) => {
+    setToken(newToken);
+    setUser(newUser);
+  };
+
+  const handleLogout = useCallback(async () => {
+    if (token) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch { /* ignorar */ }
+    }
+    setToken(null);
+    setUser(null);
+    setUserView('form');
+    resetForm();
+  }, [token]);
 
   const handleChange = useCallback((questionId, value) => {
     setFormData((prev) => ({ ...prev, [questionId]: value }));
@@ -33,11 +64,15 @@ function App() {
   const isQuestionVisible = useCallback(
     (question) => {
       if (!question.conditionalOn) return true;
-      const { questionId, value, includesValue } = question.conditionalOn;
-      const answer = formData[questionId];
-      if (value) return answer === value;
-      if (includesValue && Array.isArray(answer)) return answer.includes(includesValue);
-      return true;
+      const conditions = Array.isArray(question.conditionalOn)
+        ? question.conditionalOn
+        : [question.conditionalOn];
+      return conditions.every(({ questionId, value, includesValue }) => {
+        const answer = formData[questionId];
+        if (value !== undefined) return answer === value;
+        if (includesValue && Array.isArray(answer)) return answer.includes(includesValue);
+        return true;
+      });
     },
     [formData]
   );
@@ -46,6 +81,10 @@ function App() {
     (sectionIndex) => {
       const section = sections[sectionIndex];
       const newErrors = {};
+      if (!section.questions || section.questions.length === 0) {
+        setErrors({});
+        return true;
+      }
       section.questions.forEach((q) => {
         if (!isQuestionVisible(q)) return;
         if (!q.required) return;
@@ -67,19 +106,39 @@ function App() {
     [formData, isQuestionVisible]
   );
 
+  const cleanFormData = useCallback(() => {
+    const cleaned = { ...formData };
+    sections.forEach((section) => {
+      section.questions.forEach((q) => {
+        if (!isQuestionVisible(q)) {
+          cleaned[q.id] = null;
+        }
+      });
+    });
+    return cleaned;
+  }, [formData, isQuestionVisible]);
+
   const handleSubmit = async () => {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const response = await fetch('https://server-encuesta-cierre-umd.onrender.com/api/respuestas', {
+      const data = cleanFormData();
+      const response = await fetch('/api/respuestas', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
       });
+      if (response.status === 401) {
+        handleLogout();
+        return;
+      }
       if (!response.ok) throw new Error('Error al enviar');
       setSubmitted(true);
       window.scrollTo(0, 0);
-    } catch (error) {
+    } catch {
       setSubmitError('Error al enviar la encuesta. Verifique que el servidor esté corriendo.');
     } finally {
       setSubmitting(false);
@@ -100,9 +159,8 @@ function App() {
       } else {
         handleSubmit();
       }
-      return;
     } else {
-      const firstError = document.querySelector('.form-field.has-error');
+      const firstError = document.querySelector('.form-field-wrapper.has-error');
       if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
@@ -115,16 +173,20 @@ function App() {
     }
   };
 
+  function resetForm() {
+    setFormData({});
+    setCurrentStep(-1);
+    setConsent(false);
+    setSubmitted(false);
+    setErrors({});
+    setSubmitError(null);
+  }
+
   const renderQuestion = (question) => {
     if (!isQuestionVisible(question)) return null;
     const hasError = errors[question.id];
     const wrapperClass = `form-field-wrapper ${hasError ? 'has-error' : ''}`;
-
-    const props = {
-      question,
-      value: formData[question.id],
-      onChange: handleChange,
-    };
+    const props = { question, value: formData[question.id], onChange: handleChange };
 
     let field;
     switch (question.type) {
@@ -157,28 +219,100 @@ function App() {
     );
   };
 
+  // ======= SIN AUTENTICACIÓN → LOGIN/REGISTRO =======
+  if (!token || !user) {
+    return <LoginRegister onAuth={handleAuth} />;
+  }
+
+  // ======= ADMIN → PANEL DE ADMINISTRACIÓN =======
+  if (user.es_admin) {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <div className="header-content">
+            <img src={logo} alt="MD Micronegocios" className="header-logo" />
+            <div className="header-text">
+              <h1>Panel de Administración</h1>
+              <p>{user.nombre}</p>
+            </div>
+          </div>
+        </header>
+
+        <main className="main-content admin-content">
+          <div className="form-container">
+            <div className="admin-topbar">
+              <span className="user-info">{user.email}</span>
+              <button className="btn btn-secondary btn-sm" onClick={handleLogout}>
+                Cerrar sesión
+              </button>
+            </div>
+            <AdminView token={token} onLogout={handleLogout} />
+          </div>
+        </main>
+
+        <footer className="app-footer">
+          <p>MD Micronegocios - UNIMINUTO &copy; 2026</p>
+        </footer>
+      </div>
+    );
+  }
+
+  // ======= USUARIO NORMAL — VISTA ESTUDIANTE =======
+  if (userView === 'student') {
+    return (
+      <StudentView onBack={() => setUserView('form')} onLogout={handleLogout} user={user} />
+    );
+  }
+
+  // ======= USUARIO NORMAL — FORMULARIO =======
+
+  const headerRight = (
+    <div className="header-actions">
+      <button className="header-link" onClick={() => setUserView('student')}>
+        Mis respuestas
+      </button>
+      <button className="header-link" onClick={handleLogout}>
+        Salir
+      </button>
+    </div>
+  );
+
   if (submitted) {
     return (
       <div className="app">
-        <div className="form-container">
-          <div className="success-screen">
-            <div className="success-icon">&#10003;</div>
-            <h2>Encuesta enviada exitosamente</h2>
-            <p>Gracias por completar la Encuesta de cierre para Micronegocios 2026-Q2.</p>
-            <p>Sus respuestas han sido registradas.</p>
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                setFormData({});
-                setCurrentStep(-1);
-                setConsent(false);
-                setSubmitted(false);
-              }}
-            >
-              Enviar otra respuesta
-            </button>
+        <header className="app-header">
+          <div className="header-content">
+            <img src={logo} alt="MD Micronegocios" className="header-logo" />
+            <div className="header-text">
+              <h1>Encuesta de Cierre</h1>
+              <p>Micronegocios 2026-Q2</p>
+            </div>
+            {headerRight}
           </div>
-        </div>
+        </header>
+
+        <main className="main-content">
+          <div className="form-container">
+            <div className="success-screen">
+              <div className="success-icon">&#10003;</div>
+              <h2>Encuesta enviada exitosamente</h2>
+              <p>Gracias por completar la Encuesta de cierre para Micronegocios 2026-Q2.</p>
+              <p>Sus respuestas han sido registradas.</p>
+              <div className="success-actions">
+                <button className="btn btn-primary" onClick={resetForm}>
+                  Enviar otra respuesta
+                </button>
+                <button className="btn btn-secondary" onClick={() => setUserView('student')}>
+                  Ver mis respuestas
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <footer className="app-footer">
+          <p>MD Micronegocios - UNIMINUTO &copy; 2026</p>
+        </footer>
       </div>
     );
   }
@@ -192,6 +326,7 @@ function App() {
             <h1>Encuesta de Cierre</h1>
             <p>Micronegocios 2026-Q2</p>
           </div>
+          {headerRight}
         </div>
       </header>
 
@@ -230,9 +365,15 @@ function App() {
               {sections[currentStep].description && (
                 <p className="section-description">{sections[currentStep].description}</p>
               )}
-              <div className="questions-list">
-                {sections[currentStep].questions.map(renderQuestion)}
-              </div>
+              {sections[currentStep].questions.length === 0 ? (
+                <p className="divider-text">
+                  Presione <strong>Siguiente</strong> para continuar con las preguntas del módulo.
+                </p>
+              ) : (
+                <div className="questions-list">
+                  {sections[currentStep].questions.map(renderQuestion)}
+                </div>
+              )}
             </div>
           )}
 
@@ -254,7 +395,11 @@ function App() {
                   : 'Siguiente'}
             </button>
           </div>
-          {submitError && <p className="error-message" style={{ textAlign: 'center', marginTop: '10px' }}>{submitError}</p>}
+          {submitError && (
+            <p className="error-message" style={{ textAlign: 'center', marginTop: '10px' }}>
+              {submitError}
+            </p>
+          )}
         </div>
       </main>
 
