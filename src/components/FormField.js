@@ -1,12 +1,21 @@
 import React from 'react';
 
+function QuestionLabel({ question }) {
+  return (
+    <label className="form-label">
+      {question.number ? (
+        <><span className="question-number">{question.number}.</span> </>
+      ) : null}
+      {question.text}
+      {question.required && <span className="required">*</span>}
+    </label>
+  );
+}
+
 export function TextInput({ question, value, onChange }) {
   return (
     <div className="form-field">
-      <label className="form-label">
-        <span className="question-number">{question.number}.</span> {question.text}
-        {question.required && <span className="required">*</span>}
-      </label>
+      <QuestionLabel question={question} />
       {question.hint && <p className="form-hint">{question.hint}</p>}
       <input
         type={question.type === 'email' ? 'email' : question.type === 'number' ? 'text' : 'text'}
@@ -24,10 +33,7 @@ export function TextInput({ question, value, onChange }) {
 export function TextArea({ question, value, onChange }) {
   return (
     <div className="form-field">
-      <label className="form-label">
-        <span className="question-number">{question.number}.</span> {question.text}
-        {question.required && <span className="required">*</span>}
-      </label>
+      <QuestionLabel question={question} />
       {question.hint && <p className="form-hint">{question.hint}</p>}
       <textarea
         className="form-textarea"
@@ -42,10 +48,7 @@ export function TextArea({ question, value, onChange }) {
 export function RadioGroup({ question, value, onChange }) {
   return (
     <div className="form-field">
-      <label className="form-label">
-        <span className="question-number">{question.number}.</span> {question.text}
-        {question.required && <span className="required">*</span>}
-      </label>
+      <QuestionLabel question={question} />
       {question.hint && <p className="form-hint">{question.hint}</p>}
       <div className="options-group">
         {question.options.map((option) => (
@@ -78,10 +81,7 @@ export function CheckboxGroup({ question, value, onChange }) {
 
   return (
     <div className="form-field">
-      <label className="form-label">
-        <span className="question-number">{question.number}.</span> {question.text}
-        {question.required && <span className="required">*</span>}
-      </label>
+      <QuestionLabel question={question} />
       {question.hint && <p className="form-hint">{question.hint}</p>}
       <div className="options-group">
         {question.options.map((option) => (
@@ -110,10 +110,7 @@ export function MatrixQuestion({ question, value, onChange }) {
 
   return (
     <div className="form-field">
-      <label className="form-label">
-        <span className="question-number">{question.number}.</span> {question.text}
-        {question.required && <span className="required">*</span>}
-      </label>
+      <QuestionLabel question={question} />
       {question.hint && <p className="form-hint">{question.hint}</p>}
       <div className="matrix-container">
         <div className="matrix-table">

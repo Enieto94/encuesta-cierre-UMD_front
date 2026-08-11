@@ -164,7 +164,7 @@ function App() {
           <div className="success-screen">
             <div className="success-icon">&#10003;</div>
             <h2>Encuesta enviada exitosamente</h2>
-            <p>Gracias por completar la Encuesta de cierre para Micronegocios 2025-2.</p>
+            <p>Gracias por completar la Encuesta de cierre para Micronegocios 2026-Q2.</p>
             <p>Sus respuestas han sido registradas.</p>
             <button
               className="btn btn-primary"
@@ -190,7 +190,7 @@ function App() {
           <img src={logo} alt="MD Micronegocios" className="header-logo" />
           <div className="header-text">
             <h1>Encuesta de Cierre</h1>
-            <p>Micronegocios 2025-2</p>
+            <p>Micronegocios 2026-Q2</p>
           </div>
         </div>
       </header>
@@ -259,7 +259,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>MD Micronegocios - UNIMINUTO &copy; 2025</p>
+        <p>MD Micronegocios - UNIMINUTO &copy; 2026</p>
       </footer>
     </div>
   );
