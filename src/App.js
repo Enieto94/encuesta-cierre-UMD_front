@@ -71,7 +71,7 @@ function App() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const response = await fetch('http://localhost:3001/api/respuestas', {
+      const response = await fetch('https://server-encuesta-cierre-umd.onrender.com/api/respuestas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
