@@ -17,10 +17,10 @@ app.use(express.json({ limit: '2mb' }));
 // Configuración
 // =============================================
 const JWT_SECRET = process.env.JWT_SECRET || 'cambia-este-secreto-en-produccion';
-const DATABASE_URL = process.env.DATABASE_URL;
+const DB_URL = process.env.DB_URL;
 
-if (!DATABASE_URL) {
-    console.error('Falta variable de entorno DATABASE_URL');
+if (!DB_URL) {
+    console.error('Falta variable de entorno DB_URL');
 }
 
 // Pool reutilizable entre invocaciones (cached por la VM serverless)
@@ -28,7 +28,7 @@ let pool;
 function getPool() {
     if (!pool) {
         pool = new Pool({
-            connectionString: DATABASE_URL,
+            connectionString: DB_URL,
             ssl: { rejectUnauthorized: false },
             max: 5,
         });

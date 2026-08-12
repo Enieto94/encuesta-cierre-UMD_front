@@ -16,8 +16,8 @@ export default function LoginRegister({ onAuth }) {
         setError(null);
 
         const url = mode === 'login'
-            ? 'https://server-encuesta-cierre-umd.onrender.com/api/auth/login'
-            : 'https://server-encuesta-cierre-umd.onrender.com/api/auth/register';
+            ? '/api/auth/login'
+            : '/api/auth/register';
 
         const body = mode === 'login'
             ? { email, password }
